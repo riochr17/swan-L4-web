@@ -7,9 +7,67 @@ import { PLAYGROUND_TEMPLATES } from "./example";
 import { handleEditorDidMount } from "./monaco";
 import { getNormalizedText, runProgram } from "./runtime";
 import { OpenAILLM } from "./openai-llm";
+const SELECTED_FREE_SLUGS = [
+  "poolside/laguna-xs-2.1",
+  "cohere/north-mini-code",
+  "nvidia/nemotron-3.5-content-safety",
+  "nvidia/nemotron-3-ultra-550b-a55b",
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  "poolside/laguna-xs.2",
+  "poolside/laguna-m.1",
+  "google/gemma-4-26b-a4b-it",
+  "google/gemma-4-31b-it",
+  "google/lyria-3-pro-preview",
+  "google/lyria-3-clip-preview",
+  "nvidia/nemotron-3-super-120b-a12b",
+  "liquid/lfm-2.5-1.2b-thinking",
+  "liquid/lfm-2.5-1.2b-instruct",
+  "nvidia/nemotron-3-nano-30b-a3b",
+  "nvidia/nemotron-nano-12b-v2-vl",
+  "qwen/qwen3-next-80b-a3b-instruct",
+  "nvidia/nemotron-nano-9b-v2",
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "qwen/qwen3-coder",
+  "cognitivecomputations/dolphin-mistral-24b-venice-edition",
+  "meta-llama/llama-3.3-70b-instruct",
+  "meta-llama/llama-3.2-3b-instruct",
+  "nousresearch/hermes-3-llama-3.1-405b"
+];
+
+const OPENROUTER_FREE_MODELS = [
+  { id: "openrouter/free", name: "Auto Free Router" },
+  { id: "meta-llama/llama-3.3-70b-instruct:free", name: "Meta: Llama 3.3 70B Instruct (free)" },
+  { id: "meta-llama/llama-3.2-3b-instruct:free", name: "Meta: Llama 3.2 3B Instruct (free)" },
+  { id: "poolside/laguna-xs-2.1:free", name: "Poolside: Laguna XS 2.1 (free)" },
+  { id: "cohere/north-mini-code:free", name: "Cohere: North Mini Code (free)" },
+  { id: "nvidia/nemotron-3.5-content-safety:free", name: "NVIDIA: Nemotron 3.5 Content Safety (free)" },
+  { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "NVIDIA: Nemotron 3 Ultra (free)" },
+  { id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", name: "NVIDIA: Nemotron 3 Nano Omni (free)" },
+  { id: "poolside/laguna-xs.2:free", name: "Poolside: Laguna XS.2 (free)" },
+  { id: "poolside/laguna-m.1:free", name: "Poolside: Laguna M.1 (free)" },
+  { id: "google/gemma-4-26b-a4b-it:free", name: "Google: Gemma 4 26B A4B (free)" },
+  { id: "google/gemma-4-31b-it:free", name: "Google: Gemma 4 31B (free)" },
+  { id: "google/lyria-3-pro-preview", name: "Google: Lyria 3 Pro Preview" },
+  { id: "google/lyria-3-clip-preview", name: "Google: Lyria 3 Clip Preview" },
+  { id: "nvidia/nemotron-3-super-120b-a12b:free", name: "NVIDIA: Nemotron 3 Super (free)" },
+  { id: "liquid/lfm-2.5-1.2b-thinking:free", name: "LiquidAI: LFM2.5-1.2B-Thinking (free)" },
+  { id: "liquid/lfm-2.5-1.2b-instruct:free", name: "LiquidAI: LFM2.5-1.2B-Instruct (free)" },
+  { id: "nvidia/nemotron-3-nano-30b-a3b:free", name: "NVIDIA: Nemotron 3 Nano 30B A3B (free)" },
+  { id: "nvidia/nemotron-nano-12b-v2-vl:free", name: "NVIDIA: Nemotron Nano 12B 2 VL (free)" },
+  { id: "qwen/qwen3-next-80b-a3b-instruct:free", name: "Qwen: Qwen3 Next 80B A3B Instruct (free)" },
+  { id: "nvidia/nemotron-nano-9b-v2:free", name: "NVIDIA: Nemotron Nano 9B V2 (free)" },
+  { id: "openai/gpt-oss-120b:free", name: "OpenAI: gpt-oss-120b (free)" },
+  { id: "openai/gpt-oss-20b:free", name: "OpenAI: gpt-oss-20b (free)" },
+  { id: "qwen/qwen3-coder:free", name: "Qwen: Qwen3 Coder 480B A35B (free)" },
+  { id: "cognitivecomputations/dolphin-mistral-24b-venice-edition:free", name: "Venice: Uncensored (free)" },
+  { id: "nousresearch/hermes-3-llama-3.1-405b:free", name: "Nous: Hermes 3 405B Instruct (free)" }
+];
 
 export default function Playground() {
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
+  const [modelsList, setModelsList] = useState<{ id: string; name: string }[]>(OPENROUTER_FREE_MODELS);
+  const [selectedModel, setSelectedModel] = useState<string>(OPENROUTER_FREE_MODELS[0].id);
   const [code, setCode] = useState(PLAYGROUND_TEMPLATES[0].code);
   const [editorTheme] = useState("swan-theme");
   const [isRunning, setIsRunning] = useState(false);
@@ -23,9 +81,9 @@ export default function Playground() {
       await runProgram({
         source: code,
         llm: new OpenAILLM({
-          base_url: 'https://api.b.ai/v1',
-          apiKey: '',
-          model: 'kimi-k2.5'
+          base_url: 'https://openrouter.ai/api/v1',
+          apiKey: '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',
+          model: selectedModel
         }),
         level: 0,
         printLog(log: string, level: number) {
@@ -65,6 +123,58 @@ export default function Playground() {
     }
   }, []);
 
+  useEffect(() => {
+    async function fetchModels() {
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/models");
+        if (response.ok) {
+          const json = await response.json();
+          if (json.data && Array.isArray(json.data)) {
+            const mappedList: { id: string; name: string }[] = [];
+            
+            SELECTED_FREE_SLUGS.forEach((slug) => {
+              // Try to find the free variant first (with :free suffix)
+              const freeVariantId = `${slug}:free`;
+              const foundFree = json.data.find((m: any) => m.id === freeVariantId);
+              if (foundFree) {
+                mappedList.push({
+                  id: foundFree.id,
+                  name: foundFree.name || foundFree.id
+                });
+                return;
+              }
+              
+              // Otherwise, look for the base slug itself
+              const foundBase = json.data.find((m: any) => m.id === slug);
+              if (foundBase) {
+                mappedList.push({
+                  id: foundBase.id,
+                  name: foundBase.name || foundBase.id
+                });
+              }
+            });
+
+            if (mappedList.length > 0) {
+              // Sort models alphabetically by name
+              mappedList.sort((a: any, b: any) => a.name.localeCompare(b.name));
+              
+              // Always ensure "openrouter/free" is at the top
+              const finalList = [
+                { id: "openrouter/free", name: "Auto Free Router" },
+                ...mappedList
+              ];
+
+              setModelsList(finalList);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load models dynamically from OpenRouter:", err);
+      }
+    }
+    fetchModels();
+  }, []);
+
   return (
     <>
       {/* Desktop Workspace Layout */}
@@ -79,23 +189,44 @@ export default function Playground() {
               <span className="text-xs font-semibold">Back to Home</span>
             </Link>
             <div className="h-4 w-px bg-zinc-800" />
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <img src="/swan_logo.png" alt="Swan L4 logo" className="w-7 h-7 object-contain" />
-              <select
-                value={selectedTemplate}
-                onChange={(e) => {
-                  const nextTpl = Number(e.target.value);
-                  setSelectedTemplate(nextTpl);
-                  setCode(PLAYGROUND_TEMPLATES[nextTpl].code);
-                }}
-                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs rounded px-2.5 py-1 focus:outline-none focus:border-blue-500/50 hover:border-zinc-700 transition-colors font-sans cursor-pointer"
-              >
-                {Object.entries(PLAYGROUND_TEMPLATES).map(([key, template]) => (
-                  <option key={key} value={key} className="bg-[#07070a] text-zinc-300">
-                    {template.title}
-                  </option>
-                ))}
-              </select>
+              
+              <div className="flex items-center gap-1.5">
+                <span className="text-zinc-500 text-[10px] font-semibold tracking-wider uppercase font-mono">Template:</span>
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => {
+                    const nextTpl = Number(e.target.value);
+                    setSelectedTemplate(nextTpl);
+                    setCode(PLAYGROUND_TEMPLATES[nextTpl].code);
+                  }}
+                  className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs rounded px-2.5 py-1 focus:outline-none focus:border-blue-500/50 hover:border-zinc-700 transition-colors font-sans cursor-pointer"
+                >
+                  {PLAYGROUND_TEMPLATES.map((template, idx) => (
+                    <option key={idx} value={idx} className="bg-[#07070a] text-zinc-300">
+                      {template.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="h-4 w-px bg-zinc-800" />
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-zinc-500 text-[10px] font-semibold tracking-wider uppercase font-mono">Model:</span>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs rounded px-2.5 py-1 focus:outline-none focus:border-blue-500/50 hover:border-zinc-700 transition-colors font-sans cursor-pointer"
+                >
+                  {modelsList.map((model) => (
+                    <option key={model.id} value={model.id} className="bg-[#07070a] text-zinc-300">
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
