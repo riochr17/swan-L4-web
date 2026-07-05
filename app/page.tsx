@@ -93,10 +93,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#07070a] text-zinc-100 font-sans selection:bg-blue-500/30 selection:text-blue-200 relative">
 
-      {/* Background Gradient Blurs */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl -translate-y-1/2 pointer-events-none" />
-      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-cyan-600/5 rounded-full blur-3xl pointer-events-none" />
-
       {/* Header / Navbar */}
       <header className="border-b border-zinc-900/80 backdrop-blur-md sticky top-0 z-50 bg-[#07070a]/80 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
