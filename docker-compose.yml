@@ -8,4 +8,4 @@ services:
         NODE_ENV: "production"
     restart: always
     ports:
-      - 44027:3000
+      - 44028:3000
