@@ -1,0 +1,11 @@
+services:
+  swan:
+    container_name: l4-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: "production"
+    restart: always
+    ports:
+      - 44027:3000
