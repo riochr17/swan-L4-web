@@ -5,7 +5,7 @@ export const PLAYGROUND_TEMPLATES = [
 SAY Welcome to the Swan L4 DSL!
 SAY What is your name?
 LISTEN
-SAY Nice to meet you, {Context}!`
+SAY Nice to meet you, {Context}!\n`
   },
   {
     title: "Interactive Prompt",
@@ -16,7 +16,7 @@ THINK Write a short 2-line funny poem about it.
 SAY \`\`\`
 Here is your poem:
 {Context}
-\`\`\``
+\`\`\`\n`
   },
   {
     title: "Odd or Even Classifier",
@@ -26,7 +26,7 @@ $number LISTEN
 IF the number is even:
   SAY The number is even!
 ELSE:
-  SAY The number is odd!`
+  SAY The number is odd!\n`
   },
   {
     title: "Language Translator",
@@ -37,7 +37,7 @@ THINK Translate the text to Indonesian
 SAY \`\`\`
 Translated text:
 {Context}
-\`\`\``
+\`\`\`\n`
   },
   {
     title: "Weather Agent",
@@ -50,7 +50,7 @@ CALL_WEATHER /{$city}?format=3
 IF the weather in {$city} is rainy or snowy:
   SAY Remember to bring an umbrella today!
 ELSE:
-  SAY Have a wonderful day outdoors!`
+  SAY Have a wonderful day outdoors!\n`
   },
   {
     title: "Support Ticket Router",
@@ -65,22 +65,7 @@ ELSE:
   IF department {$dept} is Tech Support:
     SAY Tech agents will respond within 2 hours.
   ELSE:
-    SAY Connecting you to Sales right now!`
-  },
-  {
-    title: "Support Ticket Router",
-    code: `TITLE Support Ticket Router
-SAY Welcome to Support. Please describe your issue:
-LISTEN
-$dept THINK Classify this issue into Billing, Tech Support, or Sales
-SAY Routing ticket to {$dept}...
-IF department {$dept} is Billing:
-  SAY Billing agents are online from 9 AM to 5 PM.
-ELSE:
-  IF department {$dept} is Tech Support:
-    SAY Tech agents will respond within 2 hours.
-  ELSE:
-    SAY Connecting you to Sales right now!`
+    SAY Connecting you to Sales right now!\n`
   },
   {
     title: "Interactive Quiz",
@@ -104,7 +89,7 @@ IF answer is 7:
 ELSE:
   SAY Incorrect. The answer is 7.
 
-SAY Your final quiz score is: {$score}`
+SAY Your final quiz score is: {$score}\n`
   },
   {
     title: "Stock Advisor",
@@ -118,7 +103,7 @@ $advice THINK Analyze this stock chart data: {$stock_data}. Suggest whether to B
 SAY \`\`\`
 Investment Recommendation:
 {$advice}
-\`\`\``
+\`\`\`\n`
   },
   {
     title: "Smart Home Automation",
@@ -137,7 +122,7 @@ $updated_status THINK Based on current status: {$status}, apply the action: {Con
 WRITE ./devices.json {$updated_status}
 SAY Smart devices updated successfully! New status:
 READ ./devices.json
-SAY {Context}`
+SAY {Context}\n`
   },
   {
     title: "Autonomous Research Agent",
@@ -167,7 +152,7 @@ LOOP:
     incorporate the user feedback:
     {$feedback}
     \`\`\`
-    WRITE ./research_notes.txt {$notes}`
+    WRITE ./research_notes.txt {$notes}\n`
   },
   {
     title: "Store Staff",
@@ -210,6 +195,6 @@ LOOP:
       READ price-list.txt
       READ scratchpad.txt
     SAY THINK answer user request: {$user_request}
-    WRITE scratchpad.txt {$last_context}`
+    WRITE scratchpad.txt {$last_context}\n`
   },
 ];
