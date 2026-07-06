@@ -20,6 +20,7 @@ export interface RunProgramParam {
   initial_context?: string
   silent?: boolean
   printLog: (log: string, level: number) => void
+  signal: AbortSignal
 }
 
 export function runProgram(param: RunProgramParam): Promise<string> {
@@ -43,7 +44,8 @@ export function runProgram(param: RunProgramParam): Promise<string> {
             level: param.level,
             initial_context: param.initial_context,
             silent: param.silent,
-            printLog: param.printLog
+            printLog: param.printLog,
+            signal: param.signal
           }));
         } catch (err) {
           reject(err);
@@ -61,6 +63,7 @@ export interface ExecuteParam {
   initial_context?: string
   silent?: boolean
   printLog: (log: string, level: number) => void
+  signal: AbortSignal
 }
 
 export async function execute(param: ExecuteParam) {
@@ -76,7 +79,8 @@ export async function execute(param: ExecuteParam) {
       customListener: param.customListener,
       level: param.level,
       silent: param.silent,
-      printLog: param.printLog
+      printLog: param.printLog,
+      signal: param.signal
     });
   } catch (err) {
     if (err instanceof ExitProgram) {
@@ -96,11 +100,13 @@ export interface ExecuteNodesParam {
   level?: number
   silent?: boolean
   printLog: (log: string, level: number) => void
+  signal: AbortSignal
 }
 
 export async function executeNodes(param: ExecuteNodesParam): Promise<string> {
   let context = param.old_context;
   for (let i = 0; i < param.nodes.length; i++) {
+    param.signal.throwIfAborted();
     const node = param.nodes[i];
     context = await executeNode({
       node: node!,
@@ -109,7 +115,8 @@ export async function executeNodes(param: ExecuteNodesParam): Promise<string> {
       customListener: param.customListener,
       level: param.level,
       silent: param.silent,
-      printLog: param.printLog
+      printLog: param.printLog,
+      signal: param.signal
     });
   }
   return context;
@@ -123,6 +130,7 @@ export interface ExecuteNodeParam {
   level?: number,
   silent?: boolean
   printLog: (log: string, level: number) => void
+  signal: AbortSignal
 }
 
 export async function executeNode(param: ExecuteNodeParam): Promise<string> {
@@ -154,7 +162,7 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
         replaceContext(param.node.argument || '', param.old_context)
       ].join('\n');
       if (param.node.debug) printDebug(param.printLog, `Prompt: ${prompt1}`, param.level);
-      output = (await param.llm.askLLM(prompt1, z.object({ answer: z.string() }))).answer;
+      output = (await param.llm.askLLM(prompt1, z.object({ answer: z.string() }), param.signal)).answer;
       if (!param.silent) param.printLog(output, param.level || 0);
       break;
     case "Listen":
@@ -174,7 +182,7 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
         `User Request: ${replaceContext(param.node.argument || '', param.old_context)}`,
       ].join('\n');
       if (param.node.debug) printDebug(param.printLog, `Prompt: ${prompt2}`, param.level);
-      output = (await param.llm.askLLM(prompt2, z.object({ answer: z.string() }))).answer;
+      output = (await param.llm.askLLM(prompt2, z.object({ answer: z.string() }), param.signal)).answer;
       break;
     case "Call":
       try {
@@ -183,7 +191,7 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
         const params = replaceContext(param.node.argument || '', param.old_context);
         if (param.node.debug) printDebug(param.printLog, `HTTP Params: ${params}`, param.level);
         const full_url = `${call_url}${encodeURI(params)}`;
-        const response1 = await axios.get<string>(full_url);
+        const response1 = await axios.get<string>(full_url, { signal: param.signal });
         output = JSON.stringify(response1.data);
         if (param.node.debug) printDebug(param.printLog, `HTTP Response: ${output}`, param.level);
       } catch (err) {
@@ -201,7 +209,7 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
         replaceContext(param.node.condition || '', param.old_context)
       ].join('\n');
       if (param.node.debug) printDebug(param.printLog, `Prompt: ${prompt3}`, param.level);
-      const is_satisfied = (await param.llm.askLLM(prompt3, z.object({ answer: z.boolean() }))).answer;
+      const is_satisfied = (await param.llm.askLLM(prompt3, z.object({ answer: z.boolean() }), param.signal)).answer;
       if (param.node.debug) printDebug(param.printLog, `Conditional state: ${is_satisfied}`, param.level);
       if (is_satisfied) {
         output = await executeNodes({
@@ -211,7 +219,8 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
           customListener: param.customListener,
           level: param.level,
           silent: param.silent,
-          printLog: param.printLog
+          printLog: param.printLog,
+          signal: param.signal
         });
       } else {
         output = await executeNodes({
@@ -221,7 +230,8 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
           customListener: param.customListener,
           level: param.level,
           silent: param.silent,
-          printLog: param.printLog
+          printLog: param.printLog,
+          signal: param.signal
         });
       }
       break;
@@ -230,6 +240,7 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
       break;
     case "Loop":
       while (true) {
+        param.signal.throwIfAborted();
         try {
           output = await executeNodes({
             nodes: param.node.body,
@@ -238,7 +249,8 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
             customListener: param.customListener,
             level: param.level,
             silent: param.silent,
-            printLog: param.printLog
+            printLog: param.printLog,
+            signal: param.signal
           });
         } catch (err) {
           if (err instanceof ExitLoop) {
@@ -263,7 +275,8 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
             customListener: param.customListener,
             level: param.level,
             silent: true,
-            printLog: param.printLog
+            printLog: param.printLog,
+            signal: param.signal
           });
         } catch (err) {
           return err instanceof AxiosError ? JSON.stringify(err.response?.data) : (err as Error).message || '';
@@ -288,8 +301,9 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
         'Breakdown this user prompt into array of string (point items):',
         iterate_prompt
       ].join('\n');
-      const iterate_items: string[] = (await param.llm.askLLM(iterate_full_prompt, z.object({ answer: z.array(z.string()) }))).answer;
+      const iterate_items: string[] = (await param.llm.askLLM(iterate_full_prompt, z.object({ answer: z.array(z.string()) }), param.signal)).answer;
       for (const iterate_item of iterate_items) {
+        param.signal.throwIfAborted();
         try {
           output = await executeNodes({
             nodes: param.node.body,
@@ -298,7 +312,8 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
             customListener: param.customListener,
             level: param.level,
             silent: param.silent,
-            printLog: param.printLog
+            printLog: param.printLog,
+            signal: param.signal
           });
         } catch (err) {
           if (err instanceof ExitLoop) {
@@ -321,6 +336,7 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
     case "Context":
       const context_outputs: string[] = [];
       for (const item_node of param.node.body) {
+        param.signal.throwIfAborted();
         context_outputs.push(await executeNode({
           node: item_node,
           old_context: param.old_context,
@@ -328,7 +344,8 @@ export async function executeNode(param: ExecuteNodeParam): Promise<string> {
           customListener: param.customListener,
           level: param.level,
           silent: param.silent,
-          printLog: param.printLog
+          printLog: param.printLog,
+          signal: param.signal
         }));
       }
       output = context_outputs.join('\n---\n');

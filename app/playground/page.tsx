@@ -73,11 +73,13 @@ export default function Playground() {
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const refInput = useRef<HTMLInputElement>(null);
+  const abort_controller = useRef<AbortController>(null);
 
   async function run() {
     try {
       setLogs([]);
       setIsRunning(true);
+      abort_controller.current = new AbortController();
       await runProgram({
         source: code,
         llm: new OpenAILLM({
@@ -93,7 +95,10 @@ export default function Playground() {
           (refInput.current?.parentNode as HTMLDivElement).hidden = false;
           (refInput.current as HTMLInputElement).value = '';
           (refInput.current as HTMLInputElement).focus();
-          return await new Promise<string>(resolve => {
+          return await new Promise<string>((resolve, reject) => {
+            abort_controller.current!.signal.addEventListener('abort', () => {
+              reject(new Error('input aborted'));
+            });
             refInput.current?.addEventListener('keyup', e => {
               if (e.key === 'Enter') {
                 (refInput.current?.parentNode as HTMLDivElement).hidden = true;
@@ -101,7 +106,8 @@ export default function Playground() {
               }
             });
           });
-        }
+        },
+        signal: abort_controller.current!.signal
       });
     } catch (err) {
       setLogs(l => [...l, (err as Error)?.message]);
@@ -231,12 +237,19 @@ export default function Playground() {
           </div>
 
           <div className="flex items-center gap-3">
+            { isRunning && <button
+              onClick={() => {
+                abort_controller.current?.abort('User cancelled execution');
+              }}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold shadow-lg transition-all bg-red-950 text-red-500 hover:shadow-red-600/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer border border-red-900`}>
+              Abort
+            </button> }
             <button
               onClick={run}
               disabled={isRunning}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold shadow-lg transition-all ${isRunning
                 ? "bg-zinc-900 text-zinc-500 cursor-not-allowed border border-zinc-850"
-                : "bg-blue-600 text-white hover:shadow-blue-600/10 hover:scale-[1.02] active:scale-[0.98]"
+                : "cursor-pointer bg-blue-600 text-white hover:shadow-blue-600/10 hover:scale-[1.02] active:scale-[0.98]"
                 }`}
             >
               {isRunning ? (

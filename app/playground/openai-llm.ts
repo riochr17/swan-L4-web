@@ -76,6 +76,8 @@ export class OpenAILLM extends GenericLLM {
             }
           ],
           response_format: zodResponseFormat(type, "user"),
+        }, {
+          signal
         });
 
         signal?.throwIfAborted();
